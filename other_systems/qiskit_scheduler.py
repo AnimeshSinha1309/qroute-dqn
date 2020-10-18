@@ -1,4 +1,3 @@
-
 import random
 
 from qiskit.transpiler import CouplingMap
@@ -10,7 +9,11 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from environments.circuits import NodeCircuit
 from environments.physical_environment import verify_circuit
 
+import utils.circuit_tools
+
+
 MethodClass = StochasticSwap
+
 
 def generate_coupling_map(environment):
     coupling_map = CouplingMap()
@@ -28,24 +31,9 @@ def generate_coupling_map(environment):
 
     return coupling_map
 
+
 def assemble_timesteps_from_gates(number_of_nodes, gates):
-    d = [0] * number_of_nodes
-    timesteps = []
-
-    for (gate_type,n1,n2) in gates:
-        d_max = max(d[n1], d[n2])
-
-        new_depth = d_max + 1
-
-        d[n1] = new_depth
-        d[n2] = new_depth
-
-        if new_depth > len(timesteps):
-            timesteps.append([(gate_type,n1,n2)])
-        else:
-            timesteps[new_depth-1].append((gate_type,n1,n2))
-
-    return timesteps
+    return utils.circuit_tools.assemble_timesteps_from_gates(number_of_nodes, gates)
 
 
 def schedule_swaps(environment, circuit, qubit_locations=None, safety_checks_on=False, decompose_cnots=False):

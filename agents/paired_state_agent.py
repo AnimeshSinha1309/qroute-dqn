@@ -11,6 +11,7 @@ from tensorflow.keras import backend as K
 from annealers.paired_state_annealer import Annealer
 from utils.PER_memory_tree import Memory
 
+
 class DQNAgent:
 
     def __init__(self, environment, memory_size=500):
@@ -40,14 +41,13 @@ class DQNAgent:
         """
         Build the neural network model for this agent
         """
-
         input_size = furthest_distance * 2
-
-        model = Sequential()
-        model.add(Dense(32, input_dim=input_size, activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(1, activation='linear'))
+        model = Sequential([
+            Dense(32, input_dim=input_size, activation='relu'),
+            Dense(32, activation='relu'),
+            Dense(32, activation='relu'),
+            Dense(1, activation='linear'),
+        ])
         model.compile(loss='mse',
                       optimizer=Adam(lr=self.learning_rate))
         return model
@@ -61,27 +61,16 @@ class DQNAgent:
     def save_model(self, model_name=None):
         # Serialize model to JSON
         model_json = self.current_model.to_json()
-
-        if model_name is not None:
-            filepath = "./models/" + model_name
-        else:
-            filepath = "./models/agent_model"
-
+        filepath = "./models/" + (model_name if model_name is not None else 'agent_model')
         with open(filepath + ".json", "w") as json_file:
             json_file.write(model_json)
-
         # Serialize weights to HDF5
         self.current_model.save_weights(filepath + ".h5")
         print("Saved model to disk")
 
     def load_model(self, model_name=None):
         self.epsilon = self.epsilon_min
-
-        if model_name is not None:
-            filepath = "./models/" + model_name
-        else:
-            filepath = "./models/agent_model"
-
+        filepath = "./models/" + (model_name if model_name is not None else 'agent_model')
         # Load json and create model
         json_file = open(filepath + '.json', 'r')
         loaded_model_json = json_file.read()
@@ -109,12 +98,12 @@ class DQNAgent:
 
         action = np.array([0] * len(self.environment.edge_list))  # an action representing an empty layer of swaps
 
-        edges = [(n1,n2) for (n1,n2) in self.environment.edge_list]
+        edges = [(n1, n2) for (n1, n2) in self.environment.edge_list]
 
         if not self.fix_learning_bug:
             edges = list(filter(lambda e: e[0] not in protected_nodes and e[1] not in protected_nodes, edges))
 
-        edge_index_map = {edge: index for index,edge in enumerate(edges)}
+        edge_index_map = {edge: index for index, edge in enumerate(edges)}
 
         if self.fix_learning_bug:
             edges = list(filter(lambda e: e[0] not in protected_nodes and e[1] not in protected_nodes, edges))
@@ -163,7 +152,6 @@ class DQNAgent:
             else:
                 distance_vector[d-1] += 1
 
-
         best_swaps_vector = [0 for _ in range(self.max_node_degree+1)]
 
         for node, target in enumerate(nodes_to_target_nodes):
@@ -179,14 +167,13 @@ class DQNAgent:
             candidate_neighbours = []
 
             for neighbour in neighbours:
-                if self.environment.distance_matrix[neighbour][target] == dist-1 \
-                    and neighbour not in protected_nodes:
+                if self.environment.distance_matrix[neighbour][target] == dist-1 and neighbour not in protected_nodes:
                     candidate_neighbours.append(neighbour)
 
-            # print('Node ' + str(node) + ' with target ' + str(target) + ' has candidate neighbours: ' + str(candidate_neighbours))
+            # print('Node ' + str(node) + ' with target ' + str(target) + ' has candidate neighbours: ' +
+            #       str(candidate_neighbours))
 
             best_swaps_vector[len(candidate_neighbours)] += 1
-
 
         return distance_vector + best_swaps_vector
 
@@ -194,18 +181,19 @@ class DQNAgent:
         current_state_distance_vector = self.obtain_distance_vector(current_state)
         next_state_distance_vector = self.obtain_distance_vector(next_state)
 
-        return np.reshape(np.array(current_state_distance_vector + next_state_distance_vector), \
-                            (1,len(current_state_distance_vector)*2))
+        return np.reshape(np.array(current_state_distance_vector + next_state_distance_vector),
+                          (1, len(current_state_distance_vector)*2))
 
     def get_quality(self, current_state, next_state, action_chooser='model'):
         neural_net_input = self.get_NN_input(current_state, next_state)
-
         if action_chooser == 'model':
-            Qval = self.current_model.predict(neural_net_input)[0]
+            q_val = self.current_model.predict(neural_net_input)[0]
         elif action_chooser == 'target':
-            Qval = self.target_model.predict(neural_net_input)[0]
+            q_val = self.target_model.predict(neural_net_input)[0]
+        else:
+            raise ValueError('action_chooser cannot have value not in {model, target}')
 
-        return Qval
+        return q_val
 
     def act(self, current_state):
         """
@@ -227,7 +215,6 @@ class DQNAgent:
         """
         Learns from past experiences
         """
-
         tree_index, minibatch, ISweights = self.memory_tree.sample(batch_size)
         minibatch_with_weights = zip(minibatch,ISweights)
         absolute_errors = []

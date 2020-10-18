@@ -2,7 +2,6 @@ import numpy as np
 import copy
 from collections import deque
 
-from environments.environment import Environment
 
 def reset_environment_state(env, circuit_generation_function):
     if circuit_generation_function is not None:
@@ -16,6 +15,7 @@ def reset_environment_state(env, circuit_generation_function):
         initial_state, gates_scheduled = env.generate_starting_state(circuit)
 
     return initial_state, gates_scheduled
+
 
 def train_model(environment, agent, training_episodes=350, circuit_generation_function=None, should_print=True):
     num_actions_deque = deque(maxlen=50)

@@ -1,4 +1,3 @@
-
 import random
 import math
 import numpy as np
@@ -9,17 +8,25 @@ import utils.action_edge_translation as action_edge_translation
 
 
 class Annealer:
+    """
+    Implements Simulated Annealing to choose a set of actions in the combinatorial
+    action space given the DQN which predicts how good each state is.
+    """
+
     def __init__(self, agent, environment):
+        # Simulated Annealing hyper-parameters
         self.initial_temperature = 60.0
         self.min_temperature = 0.1
         self.cooling_multiplier = 0.95
+        # Keeping the environment and agents to interface
         self.environment = environment
         self.agent = agent
-
+        # Algorithm specific optimizations
         self.safety_checks_on = True
         self.speed_over_optimality = False
 
     def get_neighbour_solution(self, current_solution, current_state, forced_mask):
+        #
         neighbour_solution = copy.copy(current_solution)
         edge_list = self.environment.edge_list
         n_nodes = self.environment.number_of_nodes

@@ -1,7 +1,3 @@
-
-import numpy as np
-import copy
-import matplotlib.pyplot as plt
 import time as time_module
 import random
 
@@ -14,33 +10,34 @@ from agents.swap_scheduler import schedule_swaps
 from utils.circuit_tools import generate_full_layer_circuit
 
 
-def perform_run(nrows, ncols, training_episodes):
+def perform_run(n_rows, n_cols, training_episodes):
     test_episodes = 100
 
-    circuit_generation_function = lambda: generate_full_layer_circuit(nrows*ncols).to_dqn_rep()
+    def circuit_generation_function():
+        generate_full_layer_circuit(n_rows * n_cols).to_dqn_rep()
 
-    environment = GridEnvironment(nrows,ncols,circuit_generation_function())
+    environment = GridEnvironment(n_rows, n_cols, circuit_generation_function())
     agent = DQNAgent(environment)
 
     start_time = time_module.perf_counter()
 
-    train_model(environment, agent, training_episodes=training_episodes, circuit_generation_function=circuit_generation_function, should_print=True)
+    train_model(environment, agent,
+                training_episodes=training_episodes,
+                circuit_generation_function=circuit_generation_function,
+                should_print=True)
 
     average_circuit_depth_overhead = 0.0
 
     for e in range(test_episodes):
-        actions, circuit_depth = schedule_swaps(environment, agent, circuit=circuit_generation_function(), experience_db=None)
+        actions, circuit_depth = schedule_swaps(environment, agent,
+                                                circuit=circuit_generation_function(), experience_db=None)
         average_circuit_depth_overhead += (1.0/test_episodes) * (circuit_depth - 1)
 
     end_time = time_module.perf_counter()
 
-    total_time = end_time-start_time
-
-    datapoint = (nrows, ncols, average_circuit_depth_overhead, total_time)
-
-    print('Completed run:', datapoint)
-
-    return datapoint
+    run_stats = (n_rows, n_cols, average_circuit_depth_overhead, end_time - start_time)
+    print('Completed run: rows={0} cols={1} with average-circuit-depth-overhead={2} time-taken={3}'.format(*run_stats))
+    return run_stats
 
 
 repeats = 5
