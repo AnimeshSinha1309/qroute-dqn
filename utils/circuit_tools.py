@@ -4,7 +4,9 @@ import random
 
 from environments.circuits import QubitCircuit
 
-### GENERIC TOOLS ###
+
+# GENERIC TOOLS
+
 
 def calculate_circuit_depth(number_of_nodes, gates):
     d = [0] * number_of_nodes
@@ -63,7 +65,8 @@ def print_qiskit_circuit(nrows, ncols, gates, qubit_to_node_map):
         print()
 
 
-### CIRCUIT GENERATION TOOLS ###
+# CIRCUIT GENERATION TOOLS
+
 
 def generate_full_layer_circuit(n_qubits):
     circuit = QubitCircuit(n_qubits)
@@ -72,6 +75,7 @@ def generate_full_layer_circuit(n_qubits):
         circuit.cnot(i*2, (i*2)+1)
 
     return circuit
+
 
 def generate_completely_random_circuit(n_qubits, n_gates):
     circuit = QubitCircuit(n_qubits)
@@ -84,9 +88,10 @@ def generate_completely_random_circuit(n_qubits, n_gates):
             q1 = random.randint(0, n_qubits-1)
             q2 = random.randint(0, n_qubits-1)
 
-        circuit.cnot(q1,q2)
+        circuit.cnot(q1, q2)
 
     return circuit
+
 
 def add_layer(circuit, layer_density=1.0):
     n_qubits = circuit.n_qubits
@@ -99,8 +104,9 @@ def add_layer(circuit, layer_density=1.0):
 
     n_gates_to_add = int(n_gates*layer_density)
 
-    for (q1,q2) in gates[:n_gates_to_add]:
-        circuit.cnot(q1,q2)
+    for (q1, q2) in gates[:n_gates_to_add]:
+        circuit.cnot(q1, q2)
+
 
 def generate_multi_layer_circuit(n_qubits, n_layers, layer_density=1.0):
     circuit = QubitCircuit(n_qubits)

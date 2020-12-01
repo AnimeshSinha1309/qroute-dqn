@@ -7,10 +7,11 @@ from environments.state import State
 
 class Environment:
 
-    def __init__(self, topology, circuit):
+    def __init__(self, topology, circuit, _qubit_locations=None):
         """
         :param topology: an adjacency matrix representing the topology of the target system.
         :param circuit: a list of lists representing the circuit to be scheduled.
+        :param _qubit_locations: dummy arg received and passed for the inherited classes
         The ith row represents the sequence of interactions that qubit i will undergo during
         the course of the circuit.
         """
@@ -54,7 +55,9 @@ class Environment:
         return circuit
 
     def generate_starting_state(self, circuit=None, qubit_locations=None):
-        return State(env=self).generate_starting_state(circuit, qubit_locations)
+        state = State(env=self)
+        gates_scheduled = state.generate_starting_state(circuit, qubit_locations)
+        return state, gates_scheduled
 
     def generate_edge_list(self):
         temp = np.where(self.adjacency_matrix == 1)
@@ -101,12 +104,6 @@ class Environment:
             distances[q] = self.distance_matrix[node][target_node]
         return distances
 
-    def is_done(self, qubit_targets):
-        """
-        Returns True iff each qubit has completed all of its interactions
-        """
-        return all([target == -1 for target in qubit_targets])
-
     def step(self, action, input_state: State):
         state: State = copy.copy(input_state)
         pre_swap_reward = state.schedule_gates()  # can serve reward here
@@ -123,12 +120,12 @@ class Environment:
         for q in range(self.number_of_qubits):
             if post_swap_distances[q] < pre_swap_distances[q]:
                 distance_reduction_reward += self.distance_reduction_reward
-        gates_scheduled, protected_nodes = state.next_gates_to_schedule_between_nodes()
+        gates_scheduled = state.next_gates_to_schedule_between_nodes()
         post_swap_reward = len(gates_scheduled) * self.gate_reward
 
         reward = pre_swap_reward if self.alternative_reward_delivery else post_swap_reward + distance_reduction_reward
         next_state = copy.copy(state)
-        return next_state, reward, self.is_done(next_state.qubit_targets), gates_scheduled
+        return next_state, reward, next_state.is_done(), gates_scheduled
 
     def get_neighbour_edge_nums(self, edge_num):
         """

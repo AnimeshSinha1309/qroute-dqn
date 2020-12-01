@@ -39,8 +39,7 @@ class State:
 
         self.qubit_targets = [interactions[0] if len(interactions) > 0 else -1 for interactions in self.env.circuit]
         self.circuit_progress = [0] * self.env.number_of_qubits
-        gates_to_schedule, self.protected_nodes = self.env.next_gates_to_schedule_between_nodes(
-            self.qubit_targets, self.qubit_locations)
+        gates_to_schedule = self.next_gates_to_schedule_between_nodes()
         return gates_to_schedule
 
     def schedule_gates(self):
@@ -109,6 +108,13 @@ class State:
         # Returns the gate array and updates protected nodes
         self.protected_nodes = protected_nodes
         return next_gates_to_schedule_between_nodes
+
+    def is_done(self):
+        """
+        Returns True iff each qubit has completed all of its interactions
+        :return: bool, True if the entire circuit is executed
+        """
+        return all([target == -1 for target in self.qubit_targets])
 
     def __copy__(self):
         return State(self.env, self.qubit_locations[:], self.qubit_targets[:],
