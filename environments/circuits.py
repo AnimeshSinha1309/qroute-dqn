@@ -1,5 +1,5 @@
-
 from qiskit import QuantumCircuit as QiskitCircuit
+
 
 class QubitCircuit:
 
@@ -7,7 +7,7 @@ class QubitCircuit:
         self.n_qubits = n_qubits
         self.gates = []
 
-    ### BUILDERS ###
+    # BUILDERS
 
     @staticmethod
     def from_gates(n_qubits, gates):
@@ -15,23 +15,21 @@ class QubitCircuit:
         circuit.gates.extend(gates)
         return circuit
 
-
-    ### GATES ###
+    # GATES
 
     def cnot(self, q1, q2):
         if q1 >= self.n_qubits or q2 >= self.n_qubits:
-            raise Exception('Tried to add a gate ' + str((q1,q2)) + \
+            raise Exception('Tried to add a gate ' + str((q1, q2)) +
                             ' but circuit only has ' + str(self.n_qubits) + ' qubits')
 
-        self.gates.append((q1,q2))
+        self.gates.append((q1, q2))
 
-
-    ### OTHER METHODS ###
+    # OTHER METHODS
 
     def depth(self):
         d = [0] * self.n_qubits
 
-        for (q1,q2) in self.gates:
+        for (q1, q2) in self.gates:
             d_max = max(d[q1], d[q2])
 
             d[q1] = d_max + 1
@@ -39,8 +37,7 @@ class QubitCircuit:
 
         return max(d)
 
-
-    ### REP GENERATION ###
+    # REP GENERATION
 
     def to_dqn_rep(self):
         dqn_rep = []
@@ -48,7 +45,7 @@ class QubitCircuit:
         for _ in range(self.n_qubits):
             dqn_rep.append([])
 
-        for (q1,q2) in self.gates:
+        for (q1, q2) in self.gates:
             dqn_rep[q1].append(q2)
             dqn_rep[q2].append(q1)
 
@@ -60,15 +57,15 @@ class QubitCircuit:
         else:
             qubit_to_node_map = [-1]*self.n_qubits
 
-            for n,q in enumerate(qubit_locations):
+            for n, q in enumerate(qubit_locations):
                 qubit_to_node_map[q] = n
 
             gates = list(map(lambda g: (qubit_to_node_map[g[0]], qubit_to_node_map[g[1]]), self.gates))
 
         qiskit_rep = QiskitCircuit(self.n_qubits)
 
-        for (n1,n2) in gates:
-            qiskit_rep.cnot(n1,n2)
+        for (n1, n2) in gates:
+            qiskit_rep.cnot(n1, n2)
 
         return qiskit_rep
 
@@ -79,7 +76,7 @@ class NodeCircuit:
         self.n_nodes = n_nodes
         self.gates = []
 
-    ### BUILDERS ###
+    # BUILDERS
 
     @staticmethod
     def from_gates(n_nodes, gates, decompose=False):
@@ -109,28 +106,27 @@ class NodeCircuit:
 
         return circuit
 
+    # OTHER METHODS
 
-    ### OTHER METHODS ###
-
-    def decompose_gates(self, gates):
+    @staticmethod
+    def decompose_gates(gates):
         decomposed_gates = []
-        for (type, n1, n2) in gates:
-            if 'swap' in type.lower():
-                decomposition = [('CnotGate',n1,n2), ('CnotGate',n2,n1), ('CnotGate',n1,n2)]
+        for (gate_type, n1, n2) in gates:
+            if 'swap' in gate_type.lower():
+                decomposition = [('CnotGate', n1, n2), ('CnotGate', n2, n1), ('CnotGate', n1, n2)]
                 decomposed_gates.extend(decomposition)
-            elif 'cx' in type.lower() or 'cnot' in type.lower():
-                decomposed_gates.append((type,n1,n2))
+            elif 'cx' in gate_type.lower() or 'cnot' in gate_type.lower():
+                decomposed_gates.append((gate_type, n1, n2))
             else:
-                exit('Unknown gate type "' + str(type) + '" in circuit when decomposing')
+                exit('Unknown gate type "' + str(gate_type) + '" in circuit when decomposing')
 
         return decomposed_gates
 
     def depth(self):
         d = [0] * self.n_nodes
 
-        for (_,n1,n2) in self.gates:
+        for (_, n1, n2) in self.gates:
             d_max = max(d[n1], d[n2])
-
             d[n1] = d_max + 1
             d[n2] = d_max + 1
 
