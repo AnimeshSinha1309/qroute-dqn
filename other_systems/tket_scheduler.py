@@ -1,4 +1,3 @@
-
 import random
 
 from pytket.routing import Architecture, route, convert_index_mapping, place_with_map
@@ -7,6 +6,7 @@ from pytket.transform import Transform
 
 from environments.circuits import NodeCircuit
 from environments.physical_environment import verify_circuit
+
 
 def generate_architecture(environment):
     coupling_map = []
@@ -21,6 +21,7 @@ def generate_architecture(environment):
     architecture = Architecture(coupling_map)
 
     return architecture
+
 
 def assemble_timesteps_from_gates(number_of_nodes, gates):
     d = [0] * number_of_nodes
@@ -70,10 +71,9 @@ def schedule_swaps(environment, circuit, qubit_locations=None, safety_checks_on=
 
     if decompose_cnots:
         Transform.DecomposeSWAPtoCX().apply(routed_circuit)
-        #Transform.DecomposeBRIDGE().apply(routed_circuit)
+        # Transform.DecomposeBRIDGE().apply(routed_circuit)
 
     tket_depth = routed_circuit.depth()
-
     calculated_depth = node_circuit.depth()
 
     if tket_depth != calculated_depth:

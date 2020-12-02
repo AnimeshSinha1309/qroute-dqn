@@ -1,7 +1,3 @@
-
-import numpy as np
-import copy
-import matplotlib.pyplot as plt
 import time as time_module
 import random
 
@@ -9,8 +5,6 @@ from multiprocessing import Pool, cpu_count
 
 from agents.paired_state_agent import DQNAgent
 from environments.ibm_q20_tokyo import IBMQ20Tokyo
-from environments.rigetti_19q_acorn import Rigetti19QAcorn
-from utils.experience_db import ExperienceDB
 from agents.model_trainer import train_model
 from agents.swap_scheduler import schedule_swaps
 from utils.circuit_tools import generate_multi_layer_circuit
@@ -19,22 +13,22 @@ training_episodes = 100
 test_episodes = 100
 should_train = True
 
+
 def train_model_on_full_layers(model_number):
     model_name = "full_layers_" + str(model_number)
-
-    training_circuit_generation_function = lambda: generate_multi_layer_circuit(20, 2).to_dqn_rep()
+    def training_circuit_generation_function(): return generate_multi_layer_circuit(20, 2).to_dqn_rep()
 
     environment = IBMQ20Tokyo(training_circuit_generation_function())
     agent = DQNAgent(environment)
 
-    train_model(environment, agent, training_episodes=training_episodes, circuit_generation_function=training_circuit_generation_function, should_print=False)
+    train_model(environment, agent, training_episodes=training_episodes,
+                circuit_generation_function=training_circuit_generation_function, should_print=False)
     agent.save_model(model_name)
+
 
 def perform_run(n_layers, model_number):
     model_name = "full_layers_" + str(model_number)
-
     start_time = time_module.clock()
-
     test_circuit_generation_function = lambda: generate_multi_layer_circuit(20, n_layers)
 
     environment = IBMQ20Tokyo(test_circuit_generation_function().to_dqn_rep())
@@ -66,7 +60,7 @@ def perform_run(n_layers, model_number):
 
 repeats = 5
 
-n_layers_list = list(range(2,11))
+n_layers_list = list(range(2, 11))
 inputs = []
 
 for i in range(repeats):
@@ -79,7 +73,7 @@ if __name__ == '__main__':
     p = Pool(cpu_count())
 
     if should_train:
-        model_numbers = list(range(0,repeats))
+        model_numbers = list(range(0, repeats))
         p.map(train_model_on_full_layers, model_numbers)
 
     results = p.starmap(perform_run, inputs)

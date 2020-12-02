@@ -93,16 +93,17 @@ class Annealer:
         return initial_solution
 
     def generate_forced_mask(self, protected_nodes):
-        return list(map(lambda e: 1 if e[0] in protected_nodes or e[1] in protected_nodes else 0, self.environment.edge_list))
+        return list(map(lambda e: 1 if e[0] in protected_nodes or
+                                       e[1] in protected_nodes else 0, self.environment.edge_list))
 
     @staticmethod
     def calculate_reversed_gates_proportion(suggestion, solution):
-        reversed = [suggestion[i] == 1 and solution[i] == 0 for i in range(len(suggestion))]
+        reversed_gates = [suggestion[i] == 1 and solution[i] == 0 for i in range(len(suggestion))]
 
-        if sum(suggestion) == 0 or sum(reversed) == 0:
+        if sum(suggestion) == 0 or sum(reversed_gates) == 0:
             return 0.0
 
-        return float(sum(reversed)) / float(sum(suggestion))
+        return float(sum(reversed_gates)) / float(sum(suggestion))
 
     def simulated_annealing(self, current_state, action_chooser='model', search_limit=None):
         forced_mask = self.generate_forced_mask(current_state.protected_nodes)

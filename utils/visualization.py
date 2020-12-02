@@ -1,9 +1,7 @@
-
 import cairo
 import math
 import numpy as np
 
-from environments.ibm_q20_tokyo import IBMQ20Tokyo
 from environments.rigetti_19q_acorn import Rigetti19QAcorn
 from utils.experience_db import ExperienceDB
 
@@ -16,13 +14,15 @@ PIXEL_SCALE = 100
 
 class StateVisualizer:
 
-    def __init__(self, n_nodes, EnvironmentClass):
+    def __init__(self, n_nodes, environment_class):
+        self.surface, self.context = None, None
+
         placeholder_circuit = []
         for _ in range(n_nodes):
             placeholder_circuit.append([])
 
         self.reset_drawing_state()
-        self.environment = EnvironmentClass(placeholder_circuit)
+        self.environment = environment_class(placeholder_circuit)
         self.rows = self.environment.rows
         self.cols = self.environment.cols
 
@@ -43,21 +43,20 @@ class StateVisualizer:
         self.surface = surface
         self.context = ctx
 
-
     def save_image(self, path):
         self.surface.write_to_png(path)
 
-    def calculate_swaps(self, qubit_locations, next_qubit_locations):
+    @staticmethod
+    def calculate_swaps(qubit_locations, next_qubit_locations):
         swaps = set()
 
-        for n,q in enumerate(qubit_locations):
+        for n, q in enumerate(qubit_locations):
             future_locs = np.where(np.array(next_qubit_locations) == q)[0]
 
             if future_locs:
                 future_node = future_locs[0]
 
-                if next_qubit_locations[future_node] == q \
-                    and next_qubit_locations[n] == qubit_locations[future_node]:
+                if next_qubit_locations[future_node] == q and next_qubit_locations[n] == qubit_locations[future_node]:
 
                     swap = (n, future_node) if n < future_node else (future_node, n)
                     swaps.add(swap)
@@ -67,7 +66,7 @@ class StateVisualizer:
     def draw_node(self, x, y, r, qubit, target):
         ctx = self.context
 
-        ctx.move_to(x,y)
+        ctx.move_to(x, y)
 
         ctx.arc(x, y, r, 0, 2*math.pi)
         ctx.set_source_rgb(0, 0, 0)
@@ -111,10 +110,10 @@ class StateVisualizer:
         ctx.set_line_width(0.3)
         ctx.stroke()
 
-    def draw_topology(self, state, next_state=None):
-        qubit_locations, qubit_targets, circuit_progress, _ = state
-        swaps = self.calculate_swaps(qubit_locations, next_state[0]) \
-                if next_state is not None else set()
+    def draw_topology(self, v_state, v_next_state=None):
+        qubit_locations, qubit_targets, circuit_progress, _ = v_state
+        swaps = self.calculate_swaps(qubit_locations, v_next_state[0]) \
+                if v_next_state is not None else set()
 
         horizontal_separation_dist = WIDTH / self.cols
         vertical_separation_dist = HEIGHT / self.rows

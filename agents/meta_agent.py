@@ -7,7 +7,6 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import model_from_json
 
-from annealers.single_state_annealer import Annealer
 from utils.PER_memory_tree import Memory
 
 
@@ -29,7 +28,6 @@ class MetaDQNAgent(abc.ABC):
         self.target_model = None
 
         self.memory_tree = Memory(memory_size)
-        self.annealer = Annealer(self, environment)
 
     def build_model(self, input_size):
         """

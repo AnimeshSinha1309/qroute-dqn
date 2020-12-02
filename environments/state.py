@@ -1,10 +1,14 @@
+"""
+Defines the state at each step of the execution
+"""
+
 import numpy as np
 
 
 class State:
     """
     Represents the State of the system when transforming a circuit. This holds the reference
-    copy of the environment and the state of the transformation (even within a step)
+    copy of the environment and the state of the transformation (even within a step).
 
     :param qubit_locations: The mapping array, tau
     :param qubit_targets: Next qubit location each qubit needs to interact with
@@ -24,10 +28,12 @@ class State:
 
     def generate_starting_state(self, circuit=None, qubit_locations=None):
         """
+        Gets the state the DQN starts on. Randomly initializes the mapping if not specified
+        otherwise, and sets the progress to 0 and gets the first gates to be scheduled.
 
-        :param circuit:
-        :param qubit_locations:
-        :return:
+        :param circuit: Circuit to get the state for
+        :param qubit_locations: list, of initial locations, taken to be random if None
+        :return: list, [(n1, n2) next gates we can schedule]
         """
         if circuit is not None:
             self.env.circuit = np.copy(circuit)
@@ -112,15 +118,28 @@ class State:
     def is_done(self):
         """
         Returns True iff each qubit has completed all of its interactions
+
         :return: bool, True if the entire circuit is executed
         """
         return all([target == -1 for target in self.qubit_targets])
 
     def __copy__(self):
+        """
+        Makes a copy, keeping the reference to the same environment, but
+        instantiating the rest of the state again.
+
+        :return: State, a copy of the original, but independent of the first one, except env
+        """
         return State(self.env, self.qubit_locations[:], self.qubit_targets[:],
                      self.circuit_progress[:], set(self.protected_nodes))
 
     def __eq__(self, other):
+        """
+        Checks whether two state are identical
+
+        :param other: State, the other state to compare against
+        :return: True if they are the same, False otherwise
+        """
         return self.qubit_locations == other.qubit_locations and \
                self.qubit_targets == other.qubit_targets and \
                self.circuit_progress == other.circuit_progress and \

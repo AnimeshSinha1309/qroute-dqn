@@ -1,3 +1,7 @@
+"""
+Environment to provide the logic to step through with swaps and gates.
+"""
+
 import numpy as np
 import random
 import copy
@@ -6,12 +10,19 @@ from environments.state import State
 
 
 class Environment:
+    """
+    Defined by a Circuit and a Device Topology
+    Allows for utility functions and stepping in the environment.
+    """
 
     def __init__(self, topology, circuit, _qubit_locations=None):
         """
+        Make the environment, takes a circuit and a device-topology
+
         :param topology: an adjacency matrix representing the topology of the target system.
         :param circuit: a list of lists representing the circuit to be scheduled.
         :param _qubit_locations: dummy arg received and passed for the inherited classes
+
         The ith row represents the sequence of interactions that qubit i will undergo during
         the course of the circuit.
         """
@@ -36,30 +47,44 @@ class Environment:
 
     @staticmethod
     def generate_random_circuit(number_of_qubits, number_of_gates):
-        circuit = []
+        """
+        Makes a random circuit starting
 
+        :param number_of_qubits: count of qubits to build a circuit on
+        :param number_of_gates: count of gates in the circuit
+        :return: circuit in the DQN representation, list of lists
+        """
+        circuit = []
         for _ in range(number_of_qubits):
             circuit.append([])
-
         for _ in range(number_of_gates):
             q1 = random.randint(0, number_of_qubits-1)
             q2 = random.randint(0, number_of_qubits-1)
-
             while q1 == q2:
                 q1 = random.randint(0, number_of_qubits-1)
                 q2 = random.randint(0, number_of_qubits-1)
-
             circuit[q1].append(q2)
             circuit[q2].append(q1)
-
         return circuit
 
     def generate_starting_state(self, circuit=None, qubit_locations=None):
+        """
+        Get's the starting state for the environment.
+
+        :param circuit: list of lists, DQN representation of the circuit, None if we want to retain the same
+        :param qubit_locations: list, the mapping of qubit locations
+        :return: (State, list), (initial_state, [(n1, n2) next gates we can schedule])
+        """
         state = State(env=self)
         gates_scheduled = state.generate_starting_state(circuit, qubit_locations)
         return state, gates_scheduled
 
     def generate_edge_list(self):
+        """
+        Gets the list of edges on the hardware
+
+        :return: list of edges
+        """
         temp = np.where(self.adjacency_matrix == 1)
         return sorted(list(filter(lambda edge: edge[0] < edge[1], zip(temp[0], temp[1]))))
 
@@ -68,6 +93,8 @@ class Environment:
         TODO: Move this method to the Device modules
         Uses the Floyd-Warshall algorithm to generate a matrix of distances
         between physical nodes in the target topology.
+
+        :return: np.array, 2D, all pairs distances
         """
 
         dist = np.full((self.number_of_nodes, self.number_of_nodes), np.inf)
@@ -87,12 +114,26 @@ class Environment:
         return dist
 
     def calculate_gate_distance(self, gate, qubit_locations):
+        """
+        Gives the physical distance between two qubits given the mapping.
+
+        :param gate: tuple (q1, q2), representing the gate we are measuring the distance of
+        :param qubit_locations: list, the mapping
+        :return: int
+        """
         (q1, q2) = gate
         node1 = np.where(np.array(qubit_locations) == q1)[0][0]
         node2 = np.where(np.array(qubit_locations) == q2)[0][0]
         return self.distance_matrix[node1][node2]
 
     def calculate_distances(self, qubit_locations, qubit_targets):
+        """
+        Get's all the distances for each qubits with next operation qubit
+
+        :param qubit_locations: list/array, current mapping of logical to physical qubits
+        :param qubit_targets: list/array, the next elements to match against
+        :return: list, distances for each qubit on the next operation
+        """
         distances = [0] * self.number_of_qubits
         for q in range(self.number_of_qubits):
             target_qubit = qubit_targets[q]
@@ -105,6 +146,13 @@ class Environment:
         return distances
 
     def step(self, action, input_state: State):
+        """
+        Takes one step in the environment
+
+        :param action: list of bool, whether we want to swap on each of the hardware connected nodes
+        :param input_state: State, the state in the previous step
+        :return: State, the state in the upcoming step
+        """
         state: State = copy.copy(input_state)
         pre_swap_reward = state.schedule_gates()  # can serve reward here
         pre_swap_distances = self.calculate_distances(state.qubit_locations, state.qubit_targets)
@@ -130,6 +178,7 @@ class Environment:
     def get_neighbour_edge_nums(self, edge_num):
         """
         Finds edges that share a node with input edge.
+
         :param edge_num: index of input edge (used to get input edge from self.edge_list)
         :return: neighbour_edge_nums: indices of neighbouring edges.
         """

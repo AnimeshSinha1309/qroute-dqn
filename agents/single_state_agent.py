@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 from agents.meta_agent import MetaDQNAgent
+from annealers.single_state_annealer import Annealer
 
 
 class DQNAgent(MetaDQNAgent):
@@ -17,6 +18,7 @@ class DQNAgent(MetaDQNAgent):
         self.current_model = self.build_model(self.furthest_distance)
         self.target_model = self.build_model(self.furthest_distance)
         self.update_target_model()
+        self.annealer = Annealer(self, environment)
 
     def generate_random_action(self, protected_nodes):
         """

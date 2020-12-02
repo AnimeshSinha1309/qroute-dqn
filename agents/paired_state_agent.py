@@ -2,6 +2,7 @@ import random
 import numpy as np
 
 from agents.meta_agent import MetaDQNAgent
+from annealers.paired_state_annealer import Annealer
 
 
 class DQNAgent(MetaDQNAgent):
@@ -20,6 +21,7 @@ class DQNAgent(MetaDQNAgent):
         self.current_model = self.build_model(self.NN_state_size)
         self.target_model = self.build_model(self.NN_state_size)
         self.update_target_model()
+        self.annealer = Annealer(self, environment)
 
     def build_model(self, furthest_distance):
         """

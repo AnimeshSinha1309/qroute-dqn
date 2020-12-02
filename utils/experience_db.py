@@ -1,6 +1,6 @@
-
 import numpy as np
 import pickle
+
 
 class ExperienceDB:
 
@@ -10,7 +10,7 @@ class ExperienceDB:
         self.current_experience = None
         self.current_circuit = None
 
-    ### SAVING EXPERIENCES ###
+    # SAVING EXPERIENCES
 
     def new_experience(self, initial_state, circuit):
         self.current_experience = [(None, initial_state, None)]
@@ -25,8 +25,7 @@ class ExperienceDB:
         self.current_experience = None
         self.current_circuit = None
 
-
-    ### DISK OPS ###
+    # DISK OPS
 
     def write_to_disk(self, experiment_name=None):
         if experiment_name is not None:
@@ -44,31 +43,32 @@ class ExperienceDB:
 
         self.experiences = pickle.load(open(filepath, "rb"))
 
+    # STATE UTILS
 
-    ### STATE UTILS ###
-
-    def obtain_targets(self, current_state):
+    @staticmethod
+    def obtain_targets(current_state):
         qubit_locations = np.array(current_state[0])
         qubit_targets = current_state[1]
 
         nodes_to_target_qubits = \
-            [qubit_targets[qubit_locations[n]] for n in range(0,len(qubit_locations))]
+            [qubit_targets[qubit_locations[n]] for n in range(0, len(qubit_locations))]
 
-        return np.reshape(np.array(nodes_to_target_qubits), (1,len(qubit_locations)))
+        return np.reshape(np.array(nodes_to_target_qubits), (1, len(qubit_locations)))
 
-    def obtain_target_nodes(self, current_state):
+    @staticmethod
+    def obtain_target_nodes(current_state):
         qubit_locations = np.array(current_state[0])
         qubit_targets = current_state[1]
 
         nodes_to_target_qubits = \
-            [qubit_targets[qubit_locations[n]] for n in range(0,len(qubit_locations))]
+            [qubit_targets[qubit_locations[n]] for n in range(0, len(qubit_locations))]
 
-        nodes_to_target_nodes = [next(iter(np.where(np.array(qubit_locations) == q)[0]), -1) \
+        nodes_to_target_nodes = [next(iter(np.where(np.array(qubit_locations) == q)[0]), -1)
                                  for q in nodes_to_target_qubits]
 
-        return np.reshape(np.array(nodes_to_target_nodes), (1,len(qubit_locations)))
+        return np.reshape(np.array(nodes_to_target_nodes), (1, len(qubit_locations)))
 
-    ### DISPLAYING DATA ###
+    # DISPLAYING DATA
 
     def display_experiences_info(self):
         for index, experience in enumerate(self.experiences):
@@ -96,18 +96,18 @@ class ExperienceDB:
             for (state1, state2, action_type) in experience:
                 print("Action type:", action_type)
 
-                if state1 is not None and state2 is not None \
-                    and np.array_equal(display_function(state1), display_function(state2)):
-                    print(np.reshape(display_function(state1), (rows,cols)))
+                if state1 is not None and state2 is not None and \
+                        np.array_equal(display_function(state1), display_function(state2)):
+                    print(np.reshape(display_function(state1), (rows, cols)))
                     print()
 
                 else:
                     if state1 is not None:
-                        print(np.reshape(display_function(state1), (rows,cols)))
+                        print(np.reshape(display_function(state1), (rows, cols)))
                         print()
 
                     if state2 is not None:
-                        print(np.reshape(display_function(state2), (rows,cols)))
+                        print(np.reshape(display_function(state2), (rows, cols)))
                         print()
 
                 print()

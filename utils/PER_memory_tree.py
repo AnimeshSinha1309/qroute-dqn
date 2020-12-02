@@ -5,6 +5,7 @@ Adapted from: https://pylessons.com/CartPole-PER/
 to include IS weights
 """
 
+
 class SumTree:
     data_pointer = 0
 
@@ -88,7 +89,7 @@ class Memory:
     def sample(self, n):
         minibatch = []
 
-        b_idx, b_ISWeights = np.empty((n,), dtype=np.int32), np.empty((n, 1), dtype=np.float32)
+        b_idx, b_is_weights = np.empty((n,), dtype=np.int32), np.empty((n, 1), dtype=np.float32)
 
         priority_segment = self.tree.total_priority / n
 
@@ -106,7 +107,7 @@ class Memory:
             sampling_probabilities = priority / self.tree.total_priority
 
             #  IS = (1/N * 1/P(i)) ** b / max_weight = (N*P(i)) ** -b / max_weight
-            b_ISWeights[i, 0] = np.power(n * sampling_probabilities, -self.PER_b) / max_weight
+            b_is_weights[i, 0] = np.power(n * sampling_probabilities, -self.PER_b) / max_weight
 
             b_idx[i] = index
 
@@ -114,7 +115,7 @@ class Memory:
 
             minibatch.append(experience)
 
-        return b_idx, minibatch, b_ISWeights
+        return b_idx, minibatch, b_is_weights
 
     def batch_update(self, tree_idx, abs_errors):
         abs_errors = [abs_error + self.PER_e for abs_error in abs_errors]

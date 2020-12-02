@@ -1,4 +1,3 @@
-
 import numpy as np
 import random
 
@@ -11,7 +10,7 @@ from environments.circuits import QubitCircuit
 def calculate_circuit_depth(number_of_nodes, gates):
     d = [0] * number_of_nodes
 
-    for (_,n1,n2) in gates:
+    for (_, n1, n2) in gates:
         d_max = max(d[n1], d[n2])
 
         d[n1] = d_max + 1
@@ -24,7 +23,7 @@ def assemble_timesteps_from_gates(number_of_nodes, gates):
     d = [0] * number_of_nodes
     timesteps = []
 
-    for (gate_type,n1,n2) in gates:
+    for (gate_type, n1, n2) in gates:
         d_max = max(d[n1], d[n2])
 
         new_depth = d_max + 1
@@ -33,22 +32,22 @@ def assemble_timesteps_from_gates(number_of_nodes, gates):
         d[n2] = new_depth
 
         if new_depth > len(timesteps):
-            timesteps.append([(gate_type,n1,n2)])
+            timesteps.append([(gate_type, n1, n2)])
         else:
-            timesteps[new_depth-1].append((gate_type,n1,n2))
+            timesteps[new_depth-1].append((gate_type, n1, n2))
 
     return timesteps
 
 
-def print_qiskit_circuit(nrows, ncols, gates, qubit_to_node_map):
-    timesteps = assemble_timesteps_from_gates(nrows*ncols, gates)
+def print_qiskit_circuit(n_rows, n_cols, gates, qubit_to_node_map):
+    timesteps = assemble_timesteps_from_gates(n_rows * n_cols, gates)
 
-    qubit_locations = np.array([-1]*(nrows*ncols))
+    qubit_locations = np.array([-1] * (n_rows * n_cols))
 
-    for q,n in enumerate(qubit_to_node_map):
+    for q, n in enumerate(qubit_to_node_map):
         qubit_locations[n] = q
 
-    print(np.reshape(qubit_locations, (nrows,ncols)))
+    print(np.reshape(qubit_locations, (n_rows, n_cols)))
     print()
 
     for t in timesteps:
@@ -61,7 +60,7 @@ def print_qiskit_circuit(nrows, ncols, gates, qubit_to_node_map):
                 qubit_locations[n1] = -1
                 qubit_locations[n2] = -1
 
-        print(np.reshape(qubit_locations, (nrows,ncols)))
+        print(np.reshape(qubit_locations, (n_rows, n_cols)))
         print()
 
 
@@ -100,7 +99,7 @@ def add_layer(circuit, layer_density=1.0):
     qubits = list(range(n_qubits))
     random.shuffle(qubits)
 
-    gates = [(qubits[i*2],qubits[(i*2)+1]) for i in range(n_gates)]
+    gates = [(qubits[i*2], qubits[(i*2)+1]) for i in range(n_gates)]
 
     n_gates_to_add = int(n_gates*layer_density)
 

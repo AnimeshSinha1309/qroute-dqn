@@ -1,11 +1,10 @@
-
 import random
 
 import networkx as nx
-import cirq
-import cirq.contrib.routing as ccr
+import cirq, cirq.contrib.routing as ccr
 
 from environments.circuits import NodeCircuit
+
 
 def generate_device_graph(environment):
     device_graph = nx.Graph()
@@ -23,13 +22,15 @@ def generate_device_graph(environment):
 
     return nodes, device_graph
 
+
 def convert_circuit_to_cirq_format(circuit, qubits):
     cirq_circuit = cirq.Circuit()
 
-    for (q1,q2) in circuit.gates:
-        cirq_circuit.append([cirq.CX(qubits[q1],qubits[q2])])
+    for (q1, q2) in circuit.gates:
+        cirq_circuit.append([cirq.CX(qubits[q1], qubits[q2])])
 
     return cirq_circuit
+
 
 def assemble_timesteps_from_gates(number_of_nodes, gates):
     d = [0] * number_of_nodes
@@ -67,9 +68,11 @@ def schedule_swaps(environment, circuit, qubit_locations=None):
         qubit_locations = list(range(environment.number_of_nodes))
         random.shuffle(qubit_locations)
 
-    initial_mapping = {nodes[n]: qubits[q] for n,q in list(filter(lambda p: p[1] not in unused_qubits, enumerate(qubit_locations)))}
+    initial_mapping = {nodes[n]: qubits[q] for n,q in list(filter(
+        lambda p: p[1] not in unused_qubits, enumerate(qubit_locations)))}
 
-    swap_network = ccr.greedy.route_circuit_greedily(circuit, device_graph, max_search_radius=2, initial_mapping=initial_mapping)
+    swap_network = ccr.greedy.route_circuit_greedily(
+        circuit, device_graph, max_search_radius=2, initial_mapping=initial_mapping)
     routed_circuit = swap_network.circuit
 
     gates = []

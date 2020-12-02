@@ -1,4 +1,3 @@
-
 import random
 
 from qiskit.transpiler import CouplingMap

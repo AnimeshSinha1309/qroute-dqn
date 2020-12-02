@@ -4,17 +4,18 @@ import os
 from qiskit import QuantumCircuit
 from environments.circuits import QubitCircuit
 
+
 def import_test_set():
     print('Importing test set...')
 
     directory_path = "./realistic_test_set/"
 
     files = os.listdir(directory_path)
-    qasm_files = list(filter(lambda file_name: len(file_name) > 5 and file_name[-5:] == ".qasm", files))
+    qasm_files = list(filter(lambda filename: len(filename) > 5 and filename[-5:] == ".qasm", files))
 
     circuits = []
 
-    for i,file_name in enumerate(qasm_files):
+    for i, file_name in enumerate(qasm_files):
         file_path = directory_path + file_name
 
         if os.path.getsize(file_path) > 10000:
@@ -26,7 +27,7 @@ def import_test_set():
 
         for gate_obj, qubits, _ in qiskit_circuit.data:
             if len(qubits) > 1:
-                if gate_obj.__class__.__name__ not in  ["CnotGate", "CXGate"]:
+                if gate_obj.__class__.__name__ not in ["CnotGate", "CXGate"]:
                     exit("Non-cnot gate (" + gate_obj.__class__.__name__ + ") found for circuit: " + str(file_name))
 
                 gate = (qubits[0].index, qubits[1].index)
