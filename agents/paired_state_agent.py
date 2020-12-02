@@ -1,5 +1,5 @@
-import numpy as np
 import random
+import numpy as np
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
@@ -111,7 +111,7 @@ class DQNAgent:
 
         if not self.fix_learning_bug:
             edges = list(filter(lambda e: e[0] not in protected_nodes and e[1] not in protected_nodes, edges))
-        edge_index_map = {edge: index for index,edge in enumerate(edges)}
+        edge_index_map = {edge: index for index, edge in enumerate(edges)}
         if self.fix_learning_bug:
             edges = list(filter(lambda e: e[0] not in protected_nodes and e[1] not in protected_nodes, edges))
 
@@ -224,7 +224,7 @@ class DQNAgent:
             q_val = self.get_quality(state, next_state)
 
             if done:
-                target = reward
+                target = np.array([reward])
             else:
                 _, energy = self.annealer.simulated_annealing(next_state, action_chooser='target', search_limit=10)
                 bonus = -energy
@@ -245,7 +245,10 @@ class DQNAgent:
                 print('Total:', target)
                 print('------\n')
 
-            self.current_model.fit(nn_input, [target], epochs=1, verbose=0, sample_weight=is_weight)
+            # FIXME: Target is sometimes a float, but should be numpy array
+            assert type(target) is np.ndarray, 'Target is of type %s' % (type(target))
+            assert target.shape == (1,), 'Target is of shape %s' % (str(target.shape))
+            self.current_model.fit(nn_input, target, epochs=1, verbose=0, sample_weight=is_weight)
 
         self.memory_tree.batch_update(tree_index, absolute_errors)
 

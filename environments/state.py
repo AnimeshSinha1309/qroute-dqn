@@ -119,3 +119,9 @@ class State:
     def __copy__(self):
         return State(self.env, self.qubit_locations[:], self.qubit_targets[:],
                      self.circuit_progress[:], set(self.protected_nodes))
+
+    def __eq__(self, other):
+        return self.qubit_locations == other.qubit_locations and \
+               self.qubit_targets == other.qubit_targets and \
+               self.circuit_progress == other.circuit_progress and \
+               self.protected_nodes == other.protected_nodes
