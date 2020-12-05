@@ -1,30 +1,25 @@
-import numpy as np
+"""
+Sum tree for Prioritized Experience Replay with Importance Sampling
+Adapted from: https://pylessons.com/CartPole-PER/ to include IS weights
+"""
 
-"""
-Adapted from: https://pylessons.com/CartPole-PER/
-to include IS weights
-"""
+import numpy as np
 
 
 class SumTree:
+
     data_pointer = 0
 
     def __init__(self, capacity):
         self.capacity = capacity
-
         self.tree = np.zeros(2 * capacity - 1)
-
         self.data_list = list(np.zeros(capacity))
 
     def add(self, priority, experience):
         tree_index = self.data_pointer + self.capacity - 1
-
         self.data_list[self.data_pointer] = experience
-
         self.update(tree_index, priority)
-
         self.data_pointer += 1
-
         if self.data_pointer >= self.capacity:
             self.data_pointer = 0
 
@@ -67,6 +62,7 @@ class SumTree:
 
 
 class Memory:
+
     def __init__(self, capacity):
         self.PER_e = 0.01
         self.PER_a = 0.8
@@ -101,18 +97,13 @@ class Memory:
         for i in range(n):
             a, b = priority_segment * i, priority_segment * (i + 1)
             value = np.random.uniform(a, b)
-
             index, priority, data = self.tree.get_leaf(value)
-
             sampling_probabilities = priority / self.tree.total_priority
 
             #  IS = (1/N * 1/P(i)) ** b / max_weight = (N*P(i)) ** -b / max_weight
             b_is_weights[i, 0] = np.power(n * sampling_probabilities, -self.PER_b) / max_weight
-
             b_idx[i] = index
-
             experience = [data]
-
             minibatch.append(experience)
 
         return b_idx, minibatch, b_is_weights

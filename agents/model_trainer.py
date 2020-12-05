@@ -67,7 +67,7 @@ def train_model(environment, agent, training_episodes=350, circuit_generation_fu
 
                 if should_print:
                     print("Number of actions: {}, average: {:.5}".format(num_actions, avg_time))
-                    print("Final positions\n", np.reshape(next_state[0][0:environment.number_of_nodes],
+                    print("Final positions\n", np.reshape(next_state.qubit_locations[0:environment.number_of_nodes],
                                                           (environment.rows, environment.cols)), '\n')
                 break
             agent.replay(batch_size)

@@ -8,7 +8,7 @@ import networkx as nx
 import cirq, cirq.contrib.routing.greedy as ccr_greedy
 
 from environments.circuits import NodeCircuit
-from other_systems.schedulers import assemble_timesteps_from_gates
+from utils.circuit_tools import assemble_timesteps_from_gates
 
 
 def generate_device_graph(environment):

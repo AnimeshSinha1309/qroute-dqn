@@ -12,7 +12,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 
 from environments.circuits import NodeCircuit
 from environments.physical_environment import verify_circuit
-from other_systems.schedulers import assemble_timesteps_from_gates
+from utils.circuit_tools import assemble_timesteps_from_gates
 
 MethodClass = StochasticSwap
 
