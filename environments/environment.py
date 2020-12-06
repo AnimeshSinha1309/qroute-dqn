@@ -1,20 +1,34 @@
+"""
+Environment to provide the logic to step through with swaps and gates.
+"""
 
 import numpy as np
 import random
+import copy
+
+from environments.state import State
+
 
 class Environment:
+    """
+    Defined by a Circuit and a Device Topology
+    Allows for utility functions and stepping in the environment.
+    """
 
-    def __init__(self, topology, circuit, qubit_locations=None):
+    def __init__(self, topology, circuit, _qubit_locations=None):
         """
+        Make the environment, takes a circuit and a device-topology
+
         :param topology: an adjacency matrix representing the topology of the target system.
         :param circuit: a list of lists representing the circuit to be scheduled.
+        :param _qubit_locations: dummy arg received and passed for the inherited classes
+
         The ith row represents the sequence of interactions that qubit i will undergo during
         the course of the circuit.
         """
 
         # TODO: check that relevant arguments are indeed NumPy arrays
-        # TODO: consider how to deal with circuits that require fewer qubits than
-        # available on the target topology
+        # TODO: consider how to deal with circuits that require fewer qubits than available on the target topology
 
         self.gate_reward = 20
         self.distance_reduction_reward = 2
@@ -33,211 +47,138 @@ class Environment:
 
     @staticmethod
     def generate_random_circuit(number_of_qubits, number_of_gates):
-        circuit = []
+        """
+        Makes a random circuit starting
 
+        :param number_of_qubits: count of qubits to build a circuit on
+        :param number_of_gates: count of gates in the circuit
+        :return: circuit in the DQN representation, list of lists
+        """
+        circuit = []
         for _ in range(number_of_qubits):
             circuit.append([])
-
         for _ in range(number_of_gates):
             q1 = random.randint(0, number_of_qubits-1)
             q2 = random.randint(0, number_of_qubits-1)
-
             while q1 == q2:
                 q1 = random.randint(0, number_of_qubits-1)
                 q2 = random.randint(0, number_of_qubits-1)
-
             circuit[q1].append(q2)
             circuit[q2].append(q1)
-
         return circuit
 
     def generate_starting_state(self, circuit=None, qubit_locations=None):
-        if circuit is not None:
-            self.circuit = np.copy(circuit)
+        """
+        Get's the starting state for the environment.
 
-        if qubit_locations is None:
-            qubit_locations = list(np.arange(self.number_of_nodes))
-            random.shuffle(qubit_locations)
-        else:
-            qubit_locations = qubit_locations[:]
-
-        qubit_targets = [interactions[0] if len(interactions) > 0 else -1 \
-                         for interactions in self.circuit]
-
-        circuit_progress = [0] * self.number_of_qubits
-
-        gates_to_schedule, protected_nodes = self.next_gates_to_schedule_between_nodes(qubit_targets, qubit_locations)
-
-        starting_state = (qubit_locations, qubit_targets, circuit_progress, protected_nodes)
-
-        return starting_state, gates_to_schedule
+        :param circuit: list of lists, DQN representation of the circuit, None if we want to retain the same
+        :param qubit_locations: list, the mapping of qubit locations
+        :return: (State, list), (initial_state, [(n1, n2) next gates we can schedule])
+        """
+        state = State(env=self)
+        gates_scheduled = state.generate_starting_state(circuit, qubit_locations)
+        return state, gates_scheduled
 
     def generate_edge_list(self):
+        """
+        Gets the list of edges on the hardware
+
+        :return: list of edges
+        """
         temp = np.where(self.adjacency_matrix == 1)
         return sorted(list(filter(lambda edge: edge[0] < edge[1], zip(temp[0], temp[1]))))
 
     def generate_distance_matrix(self):
         """
+        TODO: Move this method to the Device modules
         Uses the Floyd-Warshall algorithm to generate a matrix of distances
         between physical nodes in the target topology.
+
+        :return: np.array, 2D, all pairs distances
         """
 
         dist = np.full((self.number_of_nodes, self.number_of_nodes), np.inf)
 
-        for (u,v) in self.edge_list:
+        for (u, v) in self.edge_list:
             dist[u][v] = 1
             dist[v][u] = 1
 
-        for v in range(0,self.number_of_nodes):
+        for v in range(0, self.number_of_nodes):
             dist[v][v] = 0
 
-        for k in range(0,self.number_of_nodes):
-            for i in range(0,self.number_of_nodes):
-                for j in range(0,self.number_of_nodes):
+        for k in range(0, self.number_of_nodes):
+            for i in range(0, self.number_of_nodes):
+                for j in range(0, self.number_of_nodes):
                     if dist[i][j] > dist[i][k] + dist[k][j]:
                         dist[i][j] = dist[i][k] + dist[k][j]
-
         return dist
 
-    def schedule_gates(self, state):
-        reward = 0
-
-        qubit_locations, qubit_targets, circuit_progress, _ = state
-        circuit = self.circuit
-
-        for (q1,q2) in self.next_gates_to_schedule(qubit_targets, qubit_locations):
-            circuit_progress[q1] += 1
-            circuit_progress[q2] += 1
-
-            qubit_targets[q1] = circuit[q1][circuit_progress[q1]] \
-                                if circuit_progress[q1] < len(circuit[q1]) \
-                                else -1
-            qubit_targets[q2] = circuit[q2][circuit_progress[q2]] \
-                                if circuit_progress[q2] < len(circuit[q2]) \
-                                else -1
-
-            reward += self.gate_reward
-
-        return reward
-
-    def next_gates(self, qubit_targets):
-        gates = [(q,qubit_targets[q]) if q == qubit_targets[qubit_targets[q]] and q < qubit_targets[q]
-                                      else None for q in range(0,len(qubit_targets))]
-
-        return list(filter(lambda gate: gate is not None and gate[0] < gate[1], gates))
-
-    def next_gates_to_schedule(self, qubit_targets, qubit_locations):
-        next_gates = self.next_gates(qubit_targets)
-
-        return list(filter(lambda gate: self.calculate_gate_distance(gate, qubit_locations) == 1, next_gates))
-
-    def next_gates_to_schedule_between_nodes(self, qubit_targets, qubit_locations):
-        next_gates_to_schedule = self.next_gates_to_schedule(qubit_targets, qubit_locations)
-        next_gates_to_schedule_between_nodes = []
-
-        for (q1,q2) in next_gates_to_schedule:
-            (n1,n2) = (np.where(np.array(qubit_locations) == q1)[0][0], \
-                       np.where(np.array(qubit_locations) == q2)[0][0])
-            gate_between_nodes = (n1,n2) if n1 < n2 else (n2,n1)
-            next_gates_to_schedule_between_nodes.append(gate_between_nodes)
-
-        protected_nodes = set()
-
-        for (n1,n2) in next_gates_to_schedule_between_nodes:
-            protected_nodes.add(n1)
-            protected_nodes.add(n2)
-
-        return next_gates_to_schedule_between_nodes, protected_nodes
-
     def calculate_gate_distance(self, gate, qubit_locations):
-        (q1,q2) = gate
+        """
+        Gives the physical distance between two qubits given the mapping.
 
+        :param gate: tuple (q1, q2), representing the gate we are measuring the distance of
+        :param qubit_locations: list, the mapping
+        :return: int
+        """
+        (q1, q2) = gate
         node1 = np.where(np.array(qubit_locations) == q1)[0][0]
         node2 = np.where(np.array(qubit_locations) == q2)[0][0]
-
         return self.distance_matrix[node1][node2]
 
     def calculate_distances(self, qubit_locations, qubit_targets):
-        distances = [0]*self.number_of_qubits
+        """
+        Get's all the distances for each qubits with next operation qubit
 
+        :param qubit_locations: list/array, current mapping of logical to physical qubits
+        :param qubit_targets: list/array, the next elements to match against
+        :return: list, distances for each qubit on the next operation
+        """
+        distances = [0] * self.number_of_qubits
         for q in range(self.number_of_qubits):
             target_qubit = qubit_targets[q]
-
             if target_qubit == -1:
                 distances[q] = np.inf
                 continue
-
             node = np.where(np.array(qubit_locations) == q)[0][0]
             target_node = np.where(np.array(qubit_locations) == qubit_targets[q])[0][0]
-
             distances[q] = self.distance_matrix[node][target_node]
-
         return distances
 
-    def is_done(self, qubit_targets):
+    def step(self, action, input_state: State):
         """
-        Returns True iff each qubit has completed all of its interactions
+        Takes one step in the environment
+
+        :param action: list of bool, whether we want to swap on each of the hardware connected nodes
+        :param input_state: State, the state in the previous step
+        :return: State, the state in the upcoming step
         """
-        return all([target == -1 for target in qubit_targets])
-
-    def copy_state(self, state):
-        qubit_locations, qubit_targets, circuit_progress, protected_nodes = state
-        return (qubit_locations[:], qubit_targets[:], circuit_progress[:], set(protected_nodes))
-
-    def step(self, action, state):
-        qubit_locations, qubit_targets, circuit_progress, protected_nodes = self.copy_state(state)
-
-        pre_swap_reward = self.schedule_gates((qubit_locations, qubit_targets, circuit_progress, protected_nodes)) # can serve reward here
-
-        # total_pre_swap_distance = sum([self.calculate_gate_distance(gate, qubit_locations) for gate in self.next_gates(qubit_targets)])
-
-        pre_swap_distances = self.calculate_distances(qubit_locations, qubit_targets)
-
+        state: State = copy.copy(input_state)
+        pre_swap_reward = state.schedule_gates()  # can serve reward here
+        pre_swap_distances = self.calculate_distances(state.qubit_locations, state.qubit_targets)
         swap_edge_indices = np.where(np.array(action) == 1)[0]
         swap_edges = [self.edge_list[i] for i in swap_edge_indices]
 
-        for (node1,node2) in swap_edges:
-            temp = qubit_locations[node1]
-            qubit_locations[node1] = qubit_locations[node2]
-            qubit_locations[node2] = temp
-
-        post_swap_distances = self.calculate_distances(qubit_locations, qubit_targets)
-
+        for (node1, node2) in swap_edges:
+            state.qubit_locations[node1], state.qubit_locations[node2] = \
+                state.qubit_locations[node2], state.qubit_locations[node1]
+        post_swap_distances = self.calculate_distances(state.qubit_locations, state.qubit_targets)
         distance_reduction_reward = 0
 
         for q in range(self.number_of_qubits):
             if post_swap_distances[q] < pre_swap_distances[q]:
                 distance_reduction_reward += self.distance_reduction_reward
-
-        # total_post_swap_distance = sum([self.calculate_gate_distance(gate, qubit_locations) for gate in self.next_gates(qubit_targets)])
-
-        # state_before_scheduling = self.copy_state((qubit_locations, qubit_targets, circuit_progress))
-
-        gates_scheduled, protected_nodes = self.next_gates_to_schedule_between_nodes(qubit_targets, qubit_locations)
+        gates_scheduled = state.next_gates_to_schedule_between_nodes()
         post_swap_reward = len(gates_scheduled) * self.gate_reward
 
-        # Give rewards, based on num_matches (matches = gates) and total distances
-        # if scheduling_reward > 0:
-        #     reward = scheduling_reward
-        # elif total_post_swap_distance < total_pre_swap_distance:
-        #     reward = self.distance_reduction_reward
-        # else:
-        #     reward = self.negative_reward
-
-        # if self.is_done(qubit_targets):
-        #     reward += self.circuit_completion_reward # reward doesn't matter if only annealing
-
-        # state_after_scheduling = self.copy_state((qubit_locations, qubit_targets, circuit_progress))
-
         reward = pre_swap_reward if self.alternative_reward_delivery else post_swap_reward + distance_reduction_reward
-
-        next_state = self.copy_state((qubit_locations, qubit_targets, circuit_progress, protected_nodes))
-
-        return next_state, reward, self.is_done(qubit_targets), gates_scheduled
+        next_state = copy.copy(state)
+        return next_state, reward, next_state.is_done(), gates_scheduled
 
     def get_neighbour_edge_nums(self, edge_num):
         """
         Finds edges that share a node with input edge.
+
         :param edge_num: index of input edge (used to get input edge from self.edge_list)
         :return: neighbour_edge_nums: indices of neighbouring edges.
         """

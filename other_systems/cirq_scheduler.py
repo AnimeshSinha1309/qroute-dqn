@@ -1,13 +1,23 @@
+"""
+External routing software using Cirq greedy routing
+"""
 
 import random
 
 import networkx as nx
-import cirq
-import cirq.contrib.routing as ccr
+import cirq, cirq.contrib.routing.greedy as ccr_greedy
 
 from environments.circuits import NodeCircuit
+from utils.circuit_tools import assemble_timesteps_from_gates
+
 
 def generate_device_graph(environment):
+    """
+    Generates the edge list for the given environment graph
+
+    :param environment: environment.environment.Environment, our environment object
+    :return: list of qubits, network-x graph of device
+    """
     device_graph = nx.Graph()
     nodes = [cirq.NamedQubit('node' + str(n)) for n in range(environment.number_of_nodes)]
 
@@ -19,42 +29,39 @@ def generate_device_graph(environment):
     for i in range(len(a)):
         for j in range(len(a[0])):
             if a[i][j] == 1:
-                device_graph.add_edge(nodes[i],nodes[j])
+                device_graph.add_edge(nodes[i], nodes[j])
 
     return nodes, device_graph
 
+
 def convert_circuit_to_cirq_format(circuit, qubits):
+    """
+    Converts the array of gates to an equivalent cirq circuit
+
+    :param circuit: list of tuple, [(q1, q2)], series of gates as tuples of indices
+    :param qubits: array of qubits ordered by index in circuit
+    :return: cirq.Circuit with all the CX(q1, q2)
+    """
     cirq_circuit = cirq.Circuit()
 
-    for (q1,q2) in circuit.gates:
-        cirq_circuit.append([cirq.CX(qubits[q1],qubits[q2])])
+    for (q1, q2) in circuit.gates:
+        cirq_circuit.append([cirq.CX(qubits[q1], qubits[q2])])
 
     return cirq_circuit
 
-def assemble_timesteps_from_gates(number_of_nodes, gates):
-    d = [0] * number_of_nodes
-    timesteps = []
-
-    for (gate_type,n1,n2) in gates:
-        d_max = max(d[n1], d[n2])
-
-        new_depth = d_max + 1
-
-        d[n1] = new_depth
-        d[n2] = new_depth
-
-        if new_depth > len(timesteps):
-            timesteps.append([(gate_type,n1,n2)])
-        else:
-            timesteps[new_depth-1].append((gate_type,n1,n2))
-
-    return timesteps
-
 
 def schedule_swaps(environment, circuit, qubit_locations=None):
+    """
+    Solves the qubit routing problem using Cirq greedy routing
+
+    :param environment: environment.environment.Environment, our environment object
+    :param circuit: environment.circuit.QubitCircuit, our circuit object
+    :param qubit_locations: list, mapping array from logical qubits to physical qubits
+    :return: layers of the circuit, final depth of the circuit
+    """
     unused_qubits = set()
 
-    for q,interactions in enumerate(circuit.to_dqn_rep()):
+    for q, interactions in enumerate(circuit.to_dqn_rep()):
         if len(interactions) == 0:
             unused_qubits.add(q)
 
@@ -67,9 +74,11 @@ def schedule_swaps(environment, circuit, qubit_locations=None):
         qubit_locations = list(range(environment.number_of_nodes))
         random.shuffle(qubit_locations)
 
-    initial_mapping = {nodes[n]: qubits[q] for n,q in list(filter(lambda p: p[1] not in unused_qubits, enumerate(qubit_locations)))}
+    initial_mapping = {nodes[n]: qubits[q] for n, q in list(filter(
+        lambda p: p[1] not in unused_qubits, enumerate(qubit_locations)))}
 
-    swap_network = ccr.greedy.route_circuit_greedily(circuit, device_graph, max_search_radius=2, initial_mapping=initial_mapping)
+    swap_network = ccr_greedy.route_circuit_greedily(
+        circuit, device_graph, max_search_radius=2, initial_mapping=initial_mapping)
     routed_circuit = swap_network.circuit
 
     gates = []
@@ -90,8 +99,6 @@ def schedule_swaps(environment, circuit, qubit_locations=None):
     if cirq_depth != calculated_depth:
         print('Cirq depth:', cirq_depth)
         print('Calculated depth:', calculated_depth)
-        print()
-
         exit("Cirq depth disagrees with calculated depth")
 
     layers = assemble_timesteps_from_gates(node_circuit.n_nodes, node_circuit.gates)

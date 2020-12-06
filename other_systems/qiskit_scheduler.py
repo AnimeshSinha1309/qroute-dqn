@@ -1,18 +1,29 @@
+"""
+External routing software using Qiskit routing
+"""
 
 import random
 
 from qiskit.transpiler import CouplingMap
-from qiskit.transpiler.passes.routing import BasicSwap, LookaheadSwap, StochasticSwap
+from qiskit.transpiler.passes.routing import StochasticSwap
 from qiskit.transpiler.passes.basis.decompose import Decompose
-from qiskit.extensions.standard.swap import SwapGate
+from qiskit.circuit.library import SwapGate
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 
 from environments.circuits import NodeCircuit
 from environments.physical_environment import verify_circuit
+from utils.circuit_tools import assemble_timesteps_from_gates
 
 MethodClass = StochasticSwap
 
+
 def generate_coupling_map(environment):
+    """
+    Generates the coupling map from the device adjacency matrix
+
+    :param environment: environment.environment.Environment, our environment object
+    :return: list of edges on the device topology (i, j)
+    """
     coupling_map = CouplingMap()
 
     a = environment.adjacency_matrix
@@ -20,35 +31,26 @@ def generate_coupling_map(environment):
     for i in range(len(a)):
         for j in range(len(a[0])):
             if a[i][j] == 1:
-                coupling_map.add_edge(i,j)
-                coupling_map.add_edge(j,i)
+                coupling_map.add_edge(i, j)
+                coupling_map.add_edge(j, i)
 
     if not coupling_map.is_symmetric:
         exit("Qiskit coupling map was not symmetric")
 
     return coupling_map
 
-def assemble_timesteps_from_gates(number_of_nodes, gates):
-    d = [0] * number_of_nodes
-    timesteps = []
-
-    for (gate_type,n1,n2) in gates:
-        d_max = max(d[n1], d[n2])
-
-        new_depth = d_max + 1
-
-        d[n1] = new_depth
-        d[n2] = new_depth
-
-        if new_depth > len(timesteps):
-            timesteps.append([(gate_type,n1,n2)])
-        else:
-            timesteps[new_depth-1].append((gate_type,n1,n2))
-
-    return timesteps
-
 
 def schedule_swaps(environment, circuit, qubit_locations=None, safety_checks_on=False, decompose_cnots=False):
+    """
+    Solves the qubit routing problem using Cirq greedy routing
+
+    :param environment: environment.environment.Environment, our environment object
+    :param circuit: environment.circuit.QubitCircuit, our circuit object
+    :param qubit_locations: list, mapping array from logical qubits to physical qubits
+    :param safety_checks_on: bool
+    :param decompose_cnots: bool, whether to decompose SWAP gates to CNOT
+    :return: layers of the circuit, final depth of the circuit
+    """
     original_circuit = circuit
 
     if qubit_locations is None:
@@ -74,12 +76,10 @@ def schedule_swaps(environment, circuit, qubit_locations=None, safety_checks_on=
         mapped_circuit = dag_to_circuit(mapped_dag_circuit)
 
     qiskit_depth = mapped_circuit.depth()
-
     calculated_depth = node_circuit.depth()
 
     if qiskit_depth != calculated_depth:
         print('Data:', mapped_circuit.data)
-        print('Gates:', gates)
         print('Qiskit depth:', qiskit_depth)
         print('Calculated depth:', calculated_depth)
         print()
