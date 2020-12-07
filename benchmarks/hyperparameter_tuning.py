@@ -3,7 +3,7 @@ import time as time_module
 
 from multiprocessing import Pool, cpu_count
 
-from agents.single_state_agent import DQNAgent
+from agents.single_state_agent import SimpleDQNAgent
 from environments.grid_environment import GridEnvironment
 from agents.model_trainer import train_model
 from agents.swap_scheduler import schedule_swaps
@@ -38,7 +38,7 @@ def test_parameters(_gamma):
     start_time = time_module.clock()
 
     environment = GridEnvironment(n_rows, n_cols, circuit)
-    agent = DQNAgent(environment)
+    agent = SimpleDQNAgent(environment)
 
     train_model(environment, agent, training_episodes=training_episodes, should_print=False)
 

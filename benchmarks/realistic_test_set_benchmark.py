@@ -3,7 +3,7 @@ import random
 
 from multiprocessing import Pool, cpu_count
 
-from agents.paired_state_agent import DQNAgent
+from agents.paired_state_agent import DoubleDQNAgent
 from environments.grid_environment import GridEnvironment
 from agents.model_trainer import train_model
 from agents.swap_scheduler import schedule_swaps
@@ -22,7 +22,7 @@ def train_model_on_random_circuits(f_model_number):
     def training_circuit_generation_function(): return generate_completely_random_circuit(16, 50).to_dqn_rep()
 
     environment = GridEnvironment(4, 4, training_circuit_generation_function())
-    agent = DQNAgent(environment)
+    agent = DoubleDQNAgent(environment)
 
     train_model(environment, agent, training_episodes=training_episodes,
                 circuit_generation_function=training_circuit_generation_function, should_print=False)
@@ -35,7 +35,7 @@ def perform_run(f_initial_locations, f_model_number):
     start_time = time_module.clock()
 
     environment = GridEnvironment(4, 4, test_set_circuits[0].to_dqn_rep())
-    agent = DQNAgent(environment)
+    agent = DoubleDQNAgent(environment)
     agent.load_model(model_name)
 
     average_test_time = 0.0

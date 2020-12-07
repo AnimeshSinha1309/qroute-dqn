@@ -3,7 +3,7 @@ import time as time_module
 from multiprocessing import Pool, cpu_count
 import numpy as np
 
-from agents.paired_state_agent import DQNAgent
+from agents.paired_state_agent import DoubleDQNAgent
 from environments.grid_environment import GridEnvironment
 from agents.model_trainer import train_model
 from agents.swap_scheduler import schedule_swaps
@@ -23,7 +23,7 @@ def perform_run(num_rows, num_cols, training_episodes, test_episodes=100):
     def circuit_generation_function(): return generate_full_layer_circuit(num_rows * num_cols).to_dqn_rep()
 
     environment = GridEnvironment(num_rows, num_cols, circuit_generation_function())
-    agent = DQNAgent(environment)
+    agent = DoubleDQNAgent(environment)
 
     start_time = time_module.perf_counter()
     # Pass the number of training steps and episodes to control how much we train for

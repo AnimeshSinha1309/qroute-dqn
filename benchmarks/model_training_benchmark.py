@@ -1,6 +1,6 @@
 import time as time_module
 
-from agents.paired_state_agent import DQNAgent
+from agents.paired_state_agent import DoubleDQNAgent
 from environments.grid_environment import GridEnvironment
 from utils.experience_db import ExperienceDB
 from agents.model_trainer import train_model
@@ -35,7 +35,7 @@ else:
 print(circuit)
 
 environment = GridEnvironment(n_rows, n_cols, circuit)
-agent = DQNAgent(environment)
+agent = DoubleDQNAgent(environment)
 db = ExperienceDB()
 
 training_episodes = 200 if n_rows * n_cols >= 36 else 100

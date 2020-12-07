@@ -3,7 +3,7 @@ import random
 
 from multiprocessing import Pool, cpu_count
 
-from agents.paired_state_agent import DQNAgent
+from agents.paired_state_agent import DoubleDQNAgent
 from environments.ibm_q20_tokyo import IBMQ20Tokyo
 from agents.model_trainer import train_model
 from agents.swap_scheduler import schedule_swaps
@@ -19,7 +19,7 @@ def train_model_on_full_layers(model_number):
     def training_circuit_generation_function(): return generate_multi_layer_circuit(20, 2).to_dqn_rep()
 
     environment = IBMQ20Tokyo(training_circuit_generation_function())
-    agent = DQNAgent(environment)
+    agent = DoubleDQNAgent(environment)
 
     train_model(environment, agent, training_episodes=training_episodes,
                 circuit_generation_function=training_circuit_generation_function, should_print=False)
@@ -32,7 +32,7 @@ def perform_run(n_layers, model_number):
     test_circuit_generation_function = lambda: generate_multi_layer_circuit(20, n_layers)
 
     environment = IBMQ20Tokyo(test_circuit_generation_function().to_dqn_rep())
-    agent = DQNAgent(environment)
+    agent = DoubleDQNAgent(environment)
     agent.load_model(model_name)
 
     average_test_time = 0.0

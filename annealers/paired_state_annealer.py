@@ -11,7 +11,7 @@ import utils.action_edge_translation as action_edge_translation
 from annealers.meta_annealer import MetaAnnealer
 
 
-class Annealer(MetaAnnealer):
+class DoubleDQNAnnealer(MetaAnnealer):
 
     def __init__(self, agent, environment):
         super().__init__(agent, environment)

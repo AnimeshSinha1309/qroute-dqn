@@ -2,13 +2,13 @@ import random
 import numpy as np
 
 from agents.meta_agent import MetaDQNAgent
-from annealers.paired_state_annealer import Annealer
+from annealers.paired_state_annealer import DoubleDQNAnnealer
 
 
-class DQNAgent(MetaDQNAgent):
+class DoubleDQNAgent(MetaDQNAgent):
 
     def __init__(self, environment, memory_size=500):
-        super(DQNAgent, self).__init__(environment, memory_size)
+        super(DoubleDQNAgent, self).__init__(environment, memory_size)
 
         # Set the Hyper-parameters
         self.gamma = 0.6
@@ -21,7 +21,7 @@ class DQNAgent(MetaDQNAgent):
         self.current_model = self.build_model(self.NN_state_size)
         self.target_model = self.build_model(self.NN_state_size)
         self.update_target_model()
-        self.annealer = Annealer(self, environment)
+        self.annealer = DoubleDQNAnnealer(self, environment)
 
     def build_model(self, furthest_distance):
         """
