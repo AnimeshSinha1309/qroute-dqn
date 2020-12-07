@@ -9,6 +9,19 @@ Before quantum circuits can be executed on quantum architectures, they must be b
 This project uses RL to perform the task of routing qubits. For more details, please see the above paper.
 
 
+## Running the Code
+
+Try out by running any of the files in the benchmarks directory.
+
+```shell script
+cd qroute-dqn
+python -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+export PYTHONPATH="$PYTHONPATH:$(pwd)"
+python benchmarks/grid_scaling_benchmark.py
+```
+
 ## Module structure
 
 - The `environments` directory contains classes that represent different types of quantum architecture. These are called "environments", in the RL sense of the word - specifically, they are responsible for generating a new state from a state-action pair, and delivering a reward. The simplest is the "grid" environment, but there are some unique real-world quantum architectures as well, such as the IBM Q20 Tokyo. There is also a `PhysicalEnvironment` class that is responsible for simulating a (_routed_) quantum circuit on a given target architecture, for the purpose of verifying that the hardware constraints are indeed satisfied.
@@ -20,18 +33,6 @@ This project uses RL to perform the task of routing qubits. For more details, pl
 
 Please note: the "single state" agent was briefly trialled in the thesis but was not used in the paper. The "paired state" agent remains the recommended choice, and is the one evaluated in the paper.
 
-
-## Python package versions
-
-This code requires specific versions of a few libraries in order to run. I believe there have been some minor changes to those libraries in recent times, and I have not yet had the chance to update the code in response. I recommend installing the below versions of the required libraries, or you could even try fixing the code yourself to be compatible with the latest versions.
-
-- `Keras                    2.3.1`
-- `pytket                   0.5.4`   
-- `pytket-qiskit            0.4.1`
-- `qiskit                   0.18.0`
-- `tensorflow               2.1.0`
-
-Those should be the only specific requirements. Then of course there's a few classics, such as `numpy`.
 
 ## Disclaimer
 
